@@ -26,7 +26,7 @@ function varargout = call_detection_gui(varargin)
 
 % Wu-Jung Lee | leewujung@gmail.com
 % 2015 10 24  change to to read in/save mic signals and detection results
-%             separately from two files
+%             separately so that the original data are not duplicted
 
 
 % Begin initialization code - DO NOT EDIT
