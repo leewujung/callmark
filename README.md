@@ -4,7 +4,7 @@ GUI tool for marking calls, designed with heavy manual operation
 This is a Matlab GUI tool for marking calls in recordings from animals. The program can take multi-channel recordings and allow user to switch between different channels. When a call is marked the channel in which the marking occurs is saved.
 
 Input to the program should be a `MAT` file containing `sig` (sound recording) and `fs` (sampling frequency in Hz). Below is an example of a file with 32 channel, 4 seconds of recording, sampled at 250 kHz:
-```matlab
+```
 Name         Size          Bytes       Class     Attributes
   fs           1x1              8      double              
   sig    1000002x32     256000512      double        
