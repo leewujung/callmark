@@ -165,14 +165,6 @@ data.pname = pname;
 
 setappdata(0,'data',data);
 
-% if ~isfield(data,'call') % if not previously saved results
-%     data.fname = fname_sig;
-%     data.pname = pname;
-%     setappdata(0,'data',data);
-% else
-%     gui_op.chsel_current = data.chsel;  % keep track of the current channel being displayed
-% end
-
 if isfield(data,'call') % if previously saved results
     gui_op.chsel_current = data.chsel;  % keep track of the current channel being displayed
 end
@@ -201,7 +193,7 @@ if ~isfield(data,'call') % if not previously saved results
 else
     disp('Previous detection loaded!');
 end
-set(handles.edit_curr_ch,'String',num2str(data.chsel));
+set(handles.edit_curr_ch,'String',num2str(data.call(1).channel_marked));
 
 plot_spectrogram(handles,1);
 
@@ -260,7 +252,6 @@ data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
 hh = getappdata(0,'handles_op');
 
-
 tolerance = round(2e-3*data.fs);  % tolerence in points
 [xadd,~] = ginput(1);   % time
 xadd = round(xadd/1e3*data.fs);  % convert time to index
@@ -271,10 +262,22 @@ if ~isempty(xadd)
     data.call(end+1).locs = xadd;  % append at the end, will sort when done with file
 end
 
+% sort call according to call.locs
+% [~,IX] = sort([data.call.locs]);
+% call_sorted = data.call;
+% [call_sorted(:)] = deal(data.call(IX));
+% aux_data_sorted = data.aux_data;
+% [aux_data_sorted(:)] = deal(data.aux_data(IX));
+% data.call = call_sorted;
+% data.aux_data = aux_data.sorted;
+
 % update figure
 set(gui_op.mark_spectrogram,'XData',[data.call.locs]/data.fs*1e3,'YData',50*ones(1,length(data.call)));
 set(gui_op.mark_time_series,'XData',[data.call.locs]/data.fs*1e3,'YData',zeros(1,length(data.call)));
-
+delete(gui_op.mark_num);
+gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,53*ones(length(data.call),1),...
+                       num2str((1:length(data.call))'),'color','m','fontsize',12,'fontweight','bold');
+                   
 % initialize call parameter estimates
 iC = length(data.call);
 
@@ -336,6 +339,9 @@ data.aux_data(del_idx) = [];
 % update figure
 set(gui_op.mark_spectrogram,'XData',[data.call.locs]/data.fs*1e3,'YData',50*ones(1,length(data.call)));
 set(gui_op.mark_time_series,'XData',[data.call.locs]/data.fs*1e3,'YData',zeros(1,length(data.call)));
+delete(gui_op.mark_num);
+gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,53*ones(length(data.call),1),...
+                       num2str((1:length(data.call))'),'color','m','fontsize',12,'fontweight','bold');
 
 % restore pan or zoom motion
 setAllowAxesZoom(gui_op.hzoom,hh.axes_spectrogram,1);
@@ -651,7 +657,9 @@ gui_op.image_spectrogram = imagesc(T*1e3+pt_range(1)/data.fs*1e3,F/1e3,P);
 axis xy
 % if flag==1  % first time plot spectrogram
 hold on
-gui_op.mark_spectrogram = plot([data.call.locs]/data.fs*1e3,50,'m*','markersize',10,'linewidth',1.5);
+gui_op.mark_spectrogram = plot([data.call.locs]/data.fs*1e3,50,'m*','markersize',8,'linewidth',1);
+gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,53*ones(length(data.call),1),...
+                       num2str((1:length(data.call))'),'color','m','fontsize',12,'fontweight','bold');
 hold off
 % else
 %     set(gui_op.image_spectrogram,'CData',P,'XData',T*1e3+pt_range(1)/data.fs*1e3,'YData',F/1e3);
@@ -672,7 +680,7 @@ axes(handles.axes_time_series)
 if flag==1
     gui_op.line_time_series = plot(data.sig_t*1e3,data.sig(:,gui_op.chsel_current));
     hold on
-    gui_op.mark_time_series = plot([data.call.locs]/data.fs*1e3,0,'m*','markersize',10,'linewidth',1.5);
+    gui_op.mark_time_series = plot([data.call.locs]/data.fs*1e3,0,'m*','markersize',8,'linewidth',1.5);
     hold off
     ylabel(handles.axes_time_series,'Voltage (V)');
     xlabel(handles.axes_time_series,'Time (ms)');
