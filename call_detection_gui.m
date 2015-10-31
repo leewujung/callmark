@@ -59,7 +59,7 @@ function call_detection_gui_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 % Enable figure toolbar
-set(hObject,'toolbar','figure');
+% set(hObject,'toolbar','figure');
 
 % Link plotting axes
 linkaxes([handles.axes_spectrogram,handles.axes_time_series],'x');
