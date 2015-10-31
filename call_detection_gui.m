@@ -25,8 +25,6 @@ function varargout = call_detection_gui(varargin)
 % Last Modified by GUIDE v2.5 27-Oct-2015 15:10:15
 
 % Wu-Jung Lee | leewujung@gmail.com
-% 2015 10 24  change to to read in/save mic signals and detection results
-%             separately so that the original data are not duplicted
 
 
 % Begin initialization code - DO NOT EDIT
@@ -110,8 +108,17 @@ function button_load_file_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+% Set path
+gui_op = getappdata(0,'gui_op');
+if ~isfield(gui_op,'sig_path')
+    gui_op.sig_path = uigetdir(pwd,'Select the folder containing *_mic_data.mat files');
+end
+if ~isfield(gui_op,'det_path')
+    gui_op.det_path = uigetdir(pwd,'Select the folder containing *_detect.mat files');
+end
+
 % Select file to load
-[fname,pname] = uigetfile('*.mat','Select signal file');
+[fname,pname] = uigetfile(fullfile(gui_op.sig_path,'*.mat'),'Select signal file');
 k = strfind(fname,'_detect');
 if isempty(k)  % if not '_detect' file
     ss = strsplit(fname,'.');
@@ -121,31 +128,37 @@ else
     fname_det = fname;
     fname_sig = fname(1:k-1);
 end
+gui_op.fname_sig = fname_sig;
+gui_op.fname_det = fname_det;
 
-hmsg = msgbox('Loading signal, it''s big so be patient...','Load signal','Warn');
-disp(['Loading file: ',fname,', please wait...']);
+setappdata(0,'gui_op',gui_op);
+
 
 % Load detection results
-if exist([pname,fname_det],'file')
-    D_det = load([pname,fname_det]);
+if exist(fullfile(gui_op.det_path,fname_det),'file')  % if detect file doesn't exist in current path
+    D_det = load(fullfile(gui_op.det_path,fname_det));
     % copy all fields into current data structure
     field_in_file = fieldnames(D_det);
     for iF=1:length(field_in_file)
         data.(field_in_file{iF}) = D_det.(field_in_file{iF});
     end
+    disp('Previous call marking results loaded');
+else
+    disp('No previous call marking results');
 end
 
 % Load mic signal
-D_sig = load([pname,fname_sig]);
-field_in_file = fieldnames(D_sig);
-for iF=1:length(field_in_file)
-    data.(field_in_file{iF}) = D_sig.(field_in_file{iF});
+if exist(fullfile(gui_op.sig_path,fname_sig),'file')  % if sig file doesn't exist in current path
+    D_sig = load(fullfile(gui_op.sig_path,fname_sig));
+    field_in_file = fieldnames(D_sig);
+    for iF=1:length(field_in_file)
+        data.(field_in_file{iF}) = D_sig.(field_in_file{iF});
+    end
+    disp('Signal loaded');
+else
+    disp('Mic file not found');
+    return
 end
-
-if exist('hmsg','var')
-    close(hmsg)
-end
-disp('Signal loaded!');
 
 % patch for num_ch_in_file
 data.num_ch_in_file = size(data.sig,2);
@@ -164,14 +177,6 @@ data.fname = fname_sig;
 data.pname = pname;
 
 setappdata(0,'data',data);
-
-% if ~isfield(data,'call') % if not previously saved results
-%     data.fname = fname_sig;
-%     data.pname = pname;
-%     setappdata(0,'data',data);
-% else
-%     gui_op.chsel_current = data.chsel;  % keep track of the current channel being displayed
-% end
 
 if isfield(data,'call') % if previously saved results
     gui_op.chsel_current = data.chsel;  % keep track of the current channel being displayed
@@ -201,7 +206,7 @@ if ~isfield(data,'call') % if not previously saved results
 else
     disp('Previous detection loaded!');
 end
-set(handles.edit_curr_ch,'String',num2str(data.chsel));
+set(handles.edit_curr_ch,'String',num2str(data.call(1).channel_marked));
 
 plot_spectrogram(handles,1);
 
@@ -260,7 +265,6 @@ data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
 hh = getappdata(0,'handles_op');
 
-
 tolerance = round(2e-3*data.fs);  % tolerence in points
 [xadd,~] = ginput(1);   % time
 xadd = round(xadd/1e3*data.fs);  % convert time to index
@@ -274,7 +278,10 @@ end
 % update figure
 set(gui_op.mark_spectrogram,'XData',[data.call.locs]/data.fs*1e3,'YData',50*ones(1,length(data.call)));
 set(gui_op.mark_time_series,'XData',[data.call.locs]/data.fs*1e3,'YData',zeros(1,length(data.call)));
-
+delete(gui_op.mark_num);
+gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,53*ones(length(data.call),1),...
+                       num2str((1:length(data.call))'),'color','m','fontsize',12,'fontweight','bold');
+                   
 % initialize call parameter estimates
 iC = length(data.call);
 
@@ -336,6 +343,9 @@ data.aux_data(del_idx) = [];
 % update figure
 set(gui_op.mark_spectrogram,'XData',[data.call.locs]/data.fs*1e3,'YData',50*ones(1,length(data.call)));
 set(gui_op.mark_time_series,'XData',[data.call.locs]/data.fs*1e3,'YData',zeros(1,length(data.call)));
+delete(gui_op.mark_num);
+gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,53*ones(length(data.call),1),...
+                       num2str((1:length(data.call))'),'color','m','fontsize',12,'fontweight','bold');
 
 % restore pan or zoom motion
 setAllowAxesZoom(gui_op.hzoom,hh.axes_spectrogram,1);
@@ -368,10 +378,8 @@ aux_data_sorted = data.aux_data;
 [aux_data_sorted(:)] = deal(data.aux_data(IX));
 
 % prepare for saving results
-A.fname = data.fname;
-A.pname = data.pname;
-% A.sig = data.sig;
-% A.sig_t = data.sig_t;
+A.fname = gui_op.fname_sig;
+A.pname = gui_op.sig_path;
 A.fs = data.fs;
 A.sig_rough = data.sig_rough;
 A.sig_rough_t = data.sig_rough_t;
@@ -383,7 +391,7 @@ A.aux_data = aux_data_sorted;
 
 tt = strsplit(A.fname,'.mat');
 save_fname = sprintf('%s_detect.mat',tt{1});
-[save_fname,save_pname] = uiputfile('*.mat','Save detection results',[A.pname,'/',save_fname]);
+[save_fname,save_pname] = uiputfile('*.mat','Save detection results',fullfile(gui_op.det_path,save_fname));
 save([save_pname,'/',save_fname],'-struct','A');
 
 
@@ -651,7 +659,9 @@ gui_op.image_spectrogram = imagesc(T*1e3+pt_range(1)/data.fs*1e3,F/1e3,P);
 axis xy
 % if flag==1  % first time plot spectrogram
 hold on
-gui_op.mark_spectrogram = plot([data.call.locs]/data.fs*1e3,50,'m*','markersize',10,'linewidth',1.5);
+gui_op.mark_spectrogram = plot([data.call.locs]/data.fs*1e3,50,'m*','markersize',8,'linewidth',1);
+gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,53*ones(length(data.call),1),...
+                       num2str((1:length(data.call))'),'color','m','fontsize',12,'fontweight','bold');
 hold off
 % else
 %     set(gui_op.image_spectrogram,'CData',P,'XData',T*1e3+pt_range(1)/data.fs*1e3,'YData',F/1e3);
@@ -672,7 +682,7 @@ axes(handles.axes_time_series)
 if flag==1
     gui_op.line_time_series = plot(data.sig_t*1e3,data.sig(:,gui_op.chsel_current));
     hold on
-    gui_op.mark_time_series = plot([data.call.locs]/data.fs*1e3,0,'m*','markersize',10,'linewidth',1.5);
+    gui_op.mark_time_series = plot([data.call.locs]/data.fs*1e3,0,'m*','markersize',8,'linewidth',1.5);
     hold off
     ylabel(handles.axes_time_series,'Voltage (V)');
     xlabel(handles.axes_time_series,'Time (ms)');
