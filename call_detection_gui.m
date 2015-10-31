@@ -275,15 +275,6 @@ if ~isempty(xadd)
     data.call(end+1).locs = xadd;  % append at the end, will sort when done with file
 end
 
-% sort call according to call.locs
-% [~,IX] = sort([data.call.locs]);
-% call_sorted = data.call;
-% [call_sorted(:)] = deal(data.call(IX));
-% aux_data_sorted = data.aux_data;
-% [aux_data_sorted(:)] = deal(data.aux_data(IX));
-% data.call = call_sorted;
-% data.aux_data = aux_data.sorted;
-
 % update figure
 set(gui_op.mark_spectrogram,'XData',[data.call.locs]/data.fs*1e3,'YData',50*ones(1,length(data.call)));
 set(gui_op.mark_time_series,'XData',[data.call.locs]/data.fs*1e3,'YData',zeros(1,length(data.call)));
