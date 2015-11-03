@@ -275,18 +275,6 @@ if ~isempty(xadd)
     data.call(end+1).locs = xadd;  % append at the end, will sort when done with file
 end
 
-% update figure
-set(gui_op.mark_spectrogram,'XData',[data.call.locs]/data.fs*1e3,'YData',50*ones(1,length(data.call)));
-set(gui_op.mark_time_series,'XData',[data.call.locs]/data.fs*1e3,'YData',zeros(1,length(data.call)));
-delete(gui_op.mark_num);
-gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,53*ones(length(data.call),1),...
-                       num2str((1:length(data.call))'),'color','m','fontsize',12,'fontweight','bold');
-delete(gui_op.ch_sel_num);
-[~,IX] = sort([data.call.locs]);  % correctly sorted index
-gui_op.ch_sel_num = text([data.call(IX).locs]/data.fs*1e3,90*ones(length(data.call),1),...
-                         num2str([data.call(IX).channel_marked]'),'color','b','backgroundcolor','w',...
-                         'fontsize',16,'fontweight','bold');
-
 % initialize call parameter estimates
 iC = length(data.call);
 
@@ -308,6 +296,18 @@ data.aux_data(iC).ext_idx = ext_idx;
 data.aux_data(iC).call_idx = call_idx;
 data.call(iC).call_start_idx = call_idx(1)+ext_idx(1);
 data.call(iC).call_end_idx = call_idx(2)+ext_idx(1);
+
+% update figure
+set(gui_op.mark_spectrogram,'XData',[data.call.locs]/data.fs*1e3,'YData',50*ones(1,length(data.call)));
+set(gui_op.mark_time_series,'XData',[data.call.locs]/data.fs*1e3,'YData',zeros(1,length(data.call)));
+delete(gui_op.mark_num);
+gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,53*ones(length(data.call),1),...
+                       num2str((1:length(data.call))'),'color','m','fontsize',12,'fontweight','bold');
+delete(gui_op.ch_sel_num);
+[~,IX] = sort([data.call.locs]);  % correctly sorted index
+gui_op.ch_sel_num = text([data.call(IX).locs]/data.fs*1e3,90*ones(length(data.call),1),...
+                         num2str([data.call(IX).channel_marked]'),'color','b','backgroundcolor','w',...
+                         'fontsize',16,'fontweight','bold');
 
 % save global var
 setappdata(0,'data',data);
