@@ -179,7 +179,7 @@ data.pname = pname;
 setappdata(0,'data',data);
 
 if isfield(data,'call') % if previously saved results
-    gui_op.chsel_current = data.chsel;  % keep track of the current channel being displayed
+    gui_op.chsel_current = data.call(1).channel_marked;  % keep track of the current channel being displayed
 end
 
 chsel_gui;  % update data and gui_op inside this function
