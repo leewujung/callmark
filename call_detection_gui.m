@@ -281,7 +281,12 @@ set(gui_op.mark_time_series,'XData',[data.call.locs]/data.fs*1e3,'YData',zeros(1
 delete(gui_op.mark_num);
 gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,53*ones(length(data.call),1),...
                        num2str((1:length(data.call))'),'color','m','fontsize',12,'fontweight','bold');
-                   
+delete(gui_op.ch_sel_num);
+[~,IX] = sort([data.call.locs]);  % correctly sorted index
+gui_op.ch_sel_num = text([data.call(IX).locs]/data.fs*1e3,90*ones(length(data.call),1),...
+                         num2str([data.call(IX).channel_marked]'),'color','b','backgroundcolor','w',...
+                         'fontsize',16,'fontweight','bold');
+
 % initialize call parameter estimates
 iC = length(data.call);
 
@@ -346,6 +351,11 @@ set(gui_op.mark_time_series,'XData',[data.call.locs]/data.fs*1e3,'YData',zeros(1
 delete(gui_op.mark_num);
 gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,53*ones(length(data.call),1),...
                        num2str((1:length(data.call))'),'color','m','fontsize',12,'fontweight','bold');
+delete(gui_op.ch_sel_num);
+[~,IX] = sort([data.call.locs]);  % correctly sorted index
+gui_op.ch_sel_num = text([data.call(IX).locs]/data.fs*1e3,90*ones(length(data.call),1),...
+                         num2str([data.call(IX).channel_marked]'),'color','b','backgroundcolor','w',...
+                         'fontsize',16,'fontweight','bold');
 
 % restore pan or zoom motion
 setAllowAxesZoom(gui_op.hzoom,hh.axes_spectrogram,1);
@@ -662,11 +672,12 @@ hold on
 gui_op.mark_spectrogram = plot([data.call.locs]/data.fs*1e3,50,'m*','markersize',8,'linewidth',1);
 gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,53*ones(length(data.call),1),...
                        num2str((1:length(data.call))'),'color','m','fontsize',12,'fontweight','bold');
+[~,IX] = sort([data.call.locs]);  % correctly sorted index
+gui_op.ch_sel_num = text([data.call(IX).locs]/data.fs*1e3,90*ones(length(data.call),1),...
+                         num2str([data.call(IX).channel_marked]'),'color','b','backgroundcolor','w',...
+                         'fontsize',16,'fontweight','bold');
 hold off
-% else
-%     set(gui_op.image_spectrogram,'CData',P,'XData',T*1e3+pt_range(1)/data.fs*1e3,'YData',F/1e3);
-%     set(gui_op.mark_spectrogram,'XData',[data.call.locs]/data.fs*1e3,'YData',50*ones(length(data.call),1));
-% end
+
 ylabel('Frequency (kHz)');
 xlim(xlim_curr);
 
