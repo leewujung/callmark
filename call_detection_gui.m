@@ -58,24 +58,12 @@ function call_detection_gui_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for call_detection_gui
 handles.output = hObject;
 
-% Enable figure toolbar
-% set(hObject,'toolbar','figure');
-
 % Link plotting axes
 linkaxes([handles.axes_spectrogram,handles.axes_time_series],'x');
 
 % Set zoom and pan motion
 gui_op.hzoom = zoom;
-% setAxesZoomMotion(gui_op.hzoom,handles.axes_spectrogram,'horizontal');
-% setAxesZoomMotion(gui_op.hzoom,handles.axes_time_series,'horizontal');
-
 gui_op.hpan = pan;
-% setAxesPanMotion(gui_op.hpan,handles.axes_spectrogram,'horizontal');
-% setAxesPanMotion(gui_op.hpan,handles.axes_time_series,'horizontal');
-
-% set(gui_op.hzoom,'ActionPostCallback',{@myzoomcallback});
-% set(gui_op.hpan,'ActionPostCallback',{@mypancallback});
-
 
 % Update handles structure
 guidata(hObject, handles);
@@ -112,30 +100,40 @@ function button_load_file_Callback(hObject, eventdata, handles)
 gui_op = getappdata(0,'gui_op');
 if ~isfield(gui_op,'sig_path')
     gui_op.sig_path = uigetdir(pwd,'Select the folder containing *_mic_data.mat files');
+    if isequal(gui_op.sig_path,0)
+        return
+    end
 end
 if ~isfield(gui_op,'det_path')
     gui_op.det_path = uigetdir(pwd,'Select the folder containing *_detect.mat files');
+    if isequal(gui_op.det_path,0)
+        return
+    end
 end
 
 % Select file to load
 [fname,pname] = uigetfile(fullfile(gui_op.sig_path,'*.mat'),'Select signal file');
-k = strfind(fname,'_detect');
-if isempty(k)  % if not '_detect' file
-    ss = strsplit(fname,'.');
-    fname_det = [ss{1},'_detect.mat'];
-    fname_sig = fname;
+if isequal(pname,0)
+    return
 else
-    fname_det = fname;
-    fname_sig = fname(1:k-1);
+    k = strfind(fname,'_detect');
+    if isempty(k)  % if not '_detect' file
+        ss = strsplit(fname,'.');
+        fname_det = [ss{1},'_detect.mat'];
+        fname_sig = fname;
+    else
+        fname_det = fname;
+        fname_sig = fname(1:k-1);
+    end
+    gui_op.fname_sig = fname_sig;
+    gui_op.fname_det = fname_det;
 end
-gui_op.fname_sig = fname_sig;
-gui_op.fname_det = fname_det;
 
 setappdata(0,'gui_op',gui_op);
 
 
 % Load detection results
-if exist(fullfile(gui_op.det_path,fname_det),'file')  % if detect file doesn't exist in current path
+if exist(fullfile(gui_op.det_path,fname_det),'file')  % if detect file exists in current path
     D_det = load(fullfile(gui_op.det_path,fname_det));
     % copy all fields into current data structure
     field_in_file = fieldnames(D_det);
@@ -148,7 +146,7 @@ else
 end
 
 % Load mic signal
-if exist(fullfile(gui_op.sig_path,fname_sig),'file')  % if sig file doesn't exist in current path
+if exist(fullfile(gui_op.sig_path,fname_sig),'file')  % if sig file exists in current path
     D_sig = load(fullfile(gui_op.sig_path,fname_sig));
     field_in_file = fieldnames(D_sig);
     for iF=1:length(field_in_file)
@@ -178,6 +176,10 @@ data.pname = pname;
 
 setappdata(0,'data',data);
 
+% change GUI window name to loaded file
+set(handles.figure1,'Name',data.fname);
+
+% gui_op stuff
 if isfield(data,'call') % if previously saved results
     gui_op.chsel_current = data.call(1).channel_marked;  % keep track of the current channel being displayed
 end
@@ -188,6 +190,9 @@ if exist('gui_op','var')
     setappdata(0,'gui_op',gui_op);
 end
 
+% Clear current display
+cla(handles.axes_spectrogram);
+cla(handles.axes_time_series);
 
 
 % --- Executes on button press in button_detect_call.
@@ -378,7 +383,7 @@ function button_done_Callback(hObject, eventdata, handles)
 % load global var
 data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
-hh = getappdata(0,'handles_op');
+% hh = getappdata(0,'handles_op');
 
 % sort call according to call.locs
 [~,IX] = sort([data.call.locs]);
@@ -402,7 +407,11 @@ A.aux_data = aux_data_sorted;
 tt = strsplit(A.fname,'.mat');
 save_fname = sprintf('%s_detect.mat',tt{1});
 [save_fname,save_pname] = uiputfile('*.mat','Save detection results',fullfile(gui_op.det_path,save_fname));
-save([save_pname,'/',save_fname],'-struct','A');
+if isequal(save_pname,0)
+    return
+else
+    save([save_pname,'/',save_fname],'-struct','A');
+end
 
 
 
