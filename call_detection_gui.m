@@ -22,7 +22,7 @@ function varargout = call_detection_gui(varargin)
 
 % Edit the above text to modify the response to help call_detection_gui
 
-% Last Modified by GUIDE v2.5 27-Oct-2015 15:10:15
+% Last Modified by GUIDE v2.5 10-Nov-2015 09:56:54
 
 % Wu-Jung Lee | leewujung@gmail.com
 
@@ -689,9 +689,24 @@ gui_op.ch_sel_num = text([data.call(IX).locs]/data.fs*1e3,110*ones(length(data.c
                          num2str([data.call(IX).channel_marked]'),'color','b','backgroundcolor','w',...
                          'fontsize',14,'fontweight','bold');
 hold off
-
+colormap('parula');
 ylabel('Frequency (kHz)');
 xlim(xlim_curr);
+
+% Draw track boundary on spectrogram
+if isfield(data,'track')
+axes(handles.axes_spectrogram);
+yybnd = ylim;
+hold on
+gui_op.track_start_s = plot([1 1]*data.track.time(1)*1e3,[-10,data.fs/2/1e3+10],'m','linewidth',2);
+text(data.track.time(1)*1e3,0,'Track start','color','m','fontsize',14,...
+    'verticalalignment','bottom','horizontalalignment','right','backgroundcolor','w');
+gui_op.track_end_s = plot([1 1]*data.track.time(2)*1e3,[-10,data.fs/2/1e3+10],'m','linewidth',2);
+text(data.track.time(2)*1e3,0,'Track end','color','m','fontsize',14,...
+    'verticalalignment','bottom','horizontalalignment','left','backgroundcolor','w');
+hold off
+ylim(yybnd)
+end
 
 % scale color axis
 data.curr_caxis_range = [min(min(P)) max(max(P))];
@@ -761,3 +776,69 @@ function mypancallback(obj,evd)
 hh = getappdata(0,'handles_op');
 plot_spectrogram(hh);
 % disp('pancallback')
+
+
+% --- Executes on button press in button_load_track.
+function button_load_track_Callback(hObject, eventdata, handles)
+% hObject    handle to button_load_track (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Load saved data
+data = getappdata(0,'data');
+gui_op = getappdata(0,'gui_op');
+hh_ch_sig = getappdata(0,'handles_ch_sig');
+
+% Set path and filename for bat track
+if ispref('call_detection_gui') && ispref('call_detection_gui','bat_track_path')
+    track.pname = getpref('call_detection_gui','bat_track_path');
+else
+    track.pname = '';
+end
+track.pname = uigetdir(track.pname,'Select path for bat tracks');
+if isequal(track.pname,0)
+    return;
+end
+setpref('call_detection_gui','bat_track_path',track.pname);
+
+% Get track filename from signal filename
+track.fname = regexprep(data.fname,'_mic_data','_bat_pos');
+track.fs = 200;  % frame rate for video [Hz]
+
+% Find start and end track frame idx
+bat = load(fullfile(track.pname,track.fname));
+track.time(1) = find(isfinite(bat.bat_pos{1}(:,1)),1)/track.fs;
+track.time(2) = find(isfinite(bat.bat_pos{1}(:,1)),1,'last')/track.fs;
+
+% Draw boundary on spectrogram
+axes(handles.axes_spectrogram);
+hold on
+gui_op.track_start_s = plot([1 1]*track.time(1)*1e3,[0,data.fs/2/1e3],'m','linewidth',2);
+text(track.time(1)*1e3,0,'Track start','color','m','fontsize',14,...
+    'verticalalignment','bottom','horizontalalignment','right','backgroundcolor','w');
+gui_op.track_end_s = plot([1 1]*track.time(2)*1e3,[0,data.fs/2/1e3],'m','linewidth',2);
+text(track.time(2)*1e3,0,'Track end','color','m','fontsize',14,...
+    'verticalalignment','bottom','horizontalalignment','left','backgroundcolor','w');
+hold off
+
+% Draw boundary on time axes
+axes(handles.axes_time_series);
+yybnd = ylim;
+hold on
+gui_op.track_start_s = plot([1 1]*track.time(1)*1e3,[-20 20],'r','linewidth',2);
+gui_op.track_end_s = plot([1 1]*track.time(2)*1e3,[-20 20],'r','linewidth',2);
+ylim(yybnd);
+hold off
+
+% Draw boundary on rough signal display window
+axes(hh_ch_sig.axes_ch_sig);
+yybnd = ylim;
+hold on
+gui_op.track_start_r = plot([1 1]*track.time(1),yybnd,'r','linewidth',2);
+gui_op.track_end_r = plot([1 1]*track.time(2),yybnd,'r','linewidth',2);
+hold off
+
+data.track = track;
+
+setappdata(0,'data',data);
+setappdata(0,'gui_op',gui_op);
