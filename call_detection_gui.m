@@ -689,7 +689,11 @@ gui_op.ch_sel_num = text([data.call(IX).locs]/data.fs*1e3,110*ones(length(data.c
                          num2str([data.call(IX).channel_marked]'),'color','b','backgroundcolor','w',...
                          'fontsize',14,'fontweight','bold');
 hold off
-colormap('parula');
+if exist('parula','file')
+    colormap('parula');
+else
+    colormap('jet');
+end
 ylabel('Frequency (kHz)');
 xlim(xlim_curr);
 
