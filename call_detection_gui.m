@@ -22,7 +22,7 @@ function varargout = call_detection_gui(varargin)
 
 % Edit the above text to modify the response to help call_detection_gui
 
-% Last Modified by GUIDE v2.5 27-Oct-2015 15:10:15
+% Last Modified by GUIDE v2.5 10-Nov-2015 09:56:54
 
 % Wu-Jung Lee | leewujung@gmail.com
 
@@ -58,24 +58,12 @@ function call_detection_gui_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for call_detection_gui
 handles.output = hObject;
 
-% Enable figure toolbar
-% set(hObject,'toolbar','figure');
-
 % Link plotting axes
 linkaxes([handles.axes_spectrogram,handles.axes_time_series],'x');
 
 % Set zoom and pan motion
 gui_op.hzoom = zoom;
-% setAxesZoomMotion(gui_op.hzoom,handles.axes_spectrogram,'horizontal');
-% setAxesZoomMotion(gui_op.hzoom,handles.axes_time_series,'horizontal');
-
 gui_op.hpan = pan;
-% setAxesPanMotion(gui_op.hpan,handles.axes_spectrogram,'horizontal');
-% setAxesPanMotion(gui_op.hpan,handles.axes_time_series,'horizontal');
-
-% set(gui_op.hzoom,'ActionPostCallback',{@myzoomcallback});
-% set(gui_op.hpan,'ActionPostCallback',{@mypancallback});
-
 
 % Update handles structure
 guidata(hObject, handles);
@@ -112,30 +100,40 @@ function button_load_file_Callback(hObject, eventdata, handles)
 gui_op = getappdata(0,'gui_op');
 if ~isfield(gui_op,'sig_path')
     gui_op.sig_path = uigetdir(pwd,'Select the folder containing *_mic_data.mat files');
+    if isequal(gui_op.sig_path,0)
+        return
+    end
 end
 if ~isfield(gui_op,'det_path')
     gui_op.det_path = uigetdir(pwd,'Select the folder containing *_detect.mat files');
+    if isequal(gui_op.det_path,0)
+        return
+    end
 end
 
 % Select file to load
 [fname,pname] = uigetfile(fullfile(gui_op.sig_path,'*.mat'),'Select signal file');
-k = strfind(fname,'_detect');
-if isempty(k)  % if not '_detect' file
-    ss = strsplit(fname,'.');
-    fname_det = [ss{1},'_detect.mat'];
-    fname_sig = fname;
+if isequal(pname,0)
+    return
 else
-    fname_det = fname;
-    fname_sig = fname(1:k-1);
+    k = strfind(fname,'_detect');
+    if isempty(k)  % if not '_detect' file
+        ss = strsplit(fname,'.');
+        fname_det = [ss{1},'_detect.mat'];
+        fname_sig = fname;
+    else
+        fname_det = fname;
+        fname_sig = fname(1:k-1);
+    end
+    gui_op.fname_sig = fname_sig;
+    gui_op.fname_det = fname_det;
 end
-gui_op.fname_sig = fname_sig;
-gui_op.fname_det = fname_det;
 
 setappdata(0,'gui_op',gui_op);
 
 
 % Load detection results
-if exist(fullfile(gui_op.det_path,fname_det),'file')  % if detect file doesn't exist in current path
+if exist(fullfile(gui_op.det_path,fname_det),'file')  % if detect file exists in current path
     D_det = load(fullfile(gui_op.det_path,fname_det));
     % copy all fields into current data structure
     field_in_file = fieldnames(D_det);
@@ -148,7 +146,7 @@ else
 end
 
 % Load mic signal
-if exist(fullfile(gui_op.sig_path,fname_sig),'file')  % if sig file doesn't exist in current path
+if exist(fullfile(gui_op.sig_path,fname_sig),'file')  % if sig file exists in current path
     D_sig = load(fullfile(gui_op.sig_path,fname_sig));
     field_in_file = fieldnames(D_sig);
     for iF=1:length(field_in_file)
@@ -178,6 +176,10 @@ data.pname = pname;
 
 setappdata(0,'data',data);
 
+% change GUI window name to loaded file
+set(handles.figure1,'Name',data.fname);
+
+% gui_op stuff
 if isfield(data,'call') % if previously saved results
     gui_op.chsel_current = data.call(1).channel_marked;  % keep track of the current channel being displayed
 end
@@ -188,6 +190,9 @@ if exist('gui_op','var')
     setappdata(0,'gui_op',gui_op);
 end
 
+% Clear current display
+cla(handles.axes_spectrogram);
+cla(handles.axes_time_series);
 
 
 % --- Executes on button press in button_detect_call.
@@ -275,13 +280,6 @@ if ~isempty(xadd)
     data.call(end+1).locs = xadd;  % append at the end, will sort when done with file
 end
 
-% update figure
-set(gui_op.mark_spectrogram,'XData',[data.call.locs]/data.fs*1e3,'YData',50*ones(1,length(data.call)));
-set(gui_op.mark_time_series,'XData',[data.call.locs]/data.fs*1e3,'YData',zeros(1,length(data.call)));
-delete(gui_op.mark_num);
-gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,53*ones(length(data.call),1),...
-                       num2str((1:length(data.call))'),'color','m','fontsize',12,'fontweight','bold');
-                   
 % initialize call parameter estimates
 iC = length(data.call);
 
@@ -303,6 +301,19 @@ data.aux_data(iC).ext_idx = ext_idx;
 data.aux_data(iC).call_idx = call_idx;
 data.call(iC).call_start_idx = call_idx(1)+ext_idx(1);
 data.call(iC).call_end_idx = call_idx(2)+ext_idx(1);
+
+% update figure
+set(gui_op.mark_spectrogram,'XData',[data.call.locs]/data.fs*1e3,'YData',50*ones(1,length(data.call)));
+set(gui_op.mark_time_series,'XData',[data.call.locs]/data.fs*1e3,'YData',zeros(1,length(data.call)));
+delete(gui_op.mark_num);
+gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,100*ones(length(data.call),1),...
+                       num2str((1:length(data.call))'),'color','m','backgroundcolor','w',...
+                       'fontsize',14,'fontweight','bold');
+delete(gui_op.ch_sel_num);
+[~,IX] = sort([data.call.locs]);  % correctly sorted index
+gui_op.ch_sel_num = text([data.call(IX).locs]/data.fs*1e3,110*ones(length(data.call),1),...
+                         num2str([data.call(IX).channel_marked]'),'color','b','backgroundcolor','w',...
+                         'fontsize',14,'fontweight','bold');
 
 % save global var
 setappdata(0,'data',data);
@@ -344,8 +355,14 @@ data.aux_data(del_idx) = [];
 set(gui_op.mark_spectrogram,'XData',[data.call.locs]/data.fs*1e3,'YData',50*ones(1,length(data.call)));
 set(gui_op.mark_time_series,'XData',[data.call.locs]/data.fs*1e3,'YData',zeros(1,length(data.call)));
 delete(gui_op.mark_num);
-gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,53*ones(length(data.call),1),...
-                       num2str((1:length(data.call))'),'color','m','fontsize',12,'fontweight','bold');
+gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,100*ones(length(data.call),1),...
+                       num2str((1:length(data.call))'),'color','m','backgroundcolor','w',...
+                       'fontsize',14,'fontweight','bold');
+delete(gui_op.ch_sel_num);
+[~,IX] = sort([data.call.locs]);  % correctly sorted index
+gui_op.ch_sel_num = text([data.call(IX).locs]/data.fs*1e3,110*ones(length(data.call),1),...
+                         num2str([data.call(IX).channel_marked]'),'color','b','backgroundcolor','w',...
+                         'fontsize',14,'fontweight','bold');
 
 % restore pan or zoom motion
 setAllowAxesZoom(gui_op.hzoom,hh.axes_spectrogram,1);
@@ -368,7 +385,7 @@ function button_done_Callback(hObject, eventdata, handles)
 % load global var
 data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
-hh = getappdata(0,'handles_op');
+% hh = getappdata(0,'handles_op');
 
 % sort call according to call.locs
 [~,IX] = sort([data.call.locs]);
@@ -392,7 +409,11 @@ A.aux_data = aux_data_sorted;
 tt = strsplit(A.fname,'.mat');
 save_fname = sprintf('%s_detect.mat',tt{1});
 [save_fname,save_pname] = uiputfile('*.mat','Save detection results',fullfile(gui_op.det_path,save_fname));
-save([save_pname,'/',save_fname],'-struct','A');
+if isequal(save_pname,0)
+    return
+else
+    save([save_pname,'/',save_fname],'-struct','A');
+end
 
 
 
@@ -660,15 +681,32 @@ axis xy
 % if flag==1  % first time plot spectrogram
 hold on
 gui_op.mark_spectrogram = plot([data.call.locs]/data.fs*1e3,50,'m*','markersize',8,'linewidth',1);
-gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,53*ones(length(data.call),1),...
-                       num2str((1:length(data.call))'),'color','m','fontsize',12,'fontweight','bold');
+gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,100*ones(length(data.call),1),...
+                       num2str((1:length(data.call))'),'color','m','backgroundcolor','w',...
+                       'fontsize',14,'fontweight','bold');
+[~,IX] = sort([data.call.locs]);  % correctly sorted index
+gui_op.ch_sel_num = text([data.call(IX).locs]/data.fs*1e3,110*ones(length(data.call),1),...
+                         num2str([data.call(IX).channel_marked]'),'color','b','backgroundcolor','w',...
+                         'fontsize',14,'fontweight','bold');
 hold off
-% else
-%     set(gui_op.image_spectrogram,'CData',P,'XData',T*1e3+pt_range(1)/data.fs*1e3,'YData',F/1e3);
-%     set(gui_op.mark_spectrogram,'XData',[data.call.locs]/data.fs*1e3,'YData',50*ones(length(data.call),1));
-% end
+colormap('parula');
 ylabel('Frequency (kHz)');
 xlim(xlim_curr);
+
+% Draw track boundary on spectrogram
+if isfield(data,'track')
+axes(handles.axes_spectrogram);
+yybnd = ylim;
+hold on
+gui_op.track_start_s = plot([1 1]*data.track.time(1)*1e3,[-10,data.fs/2/1e3+10],'m','linewidth',2);
+text(data.track.time(1)*1e3,0,'Track start','color','m','fontsize',14,...
+    'verticalalignment','bottom','horizontalalignment','right','backgroundcolor','w');
+gui_op.track_end_s = plot([1 1]*data.track.time(2)*1e3,[-10,data.fs/2/1e3+10],'m','linewidth',2);
+text(data.track.time(2)*1e3,0,'Track end','color','m','fontsize',14,...
+    'verticalalignment','bottom','horizontalalignment','left','backgroundcolor','w');
+hold off
+ylim(yybnd)
+end
 
 % scale color axis
 data.curr_caxis_range = [min(min(P)) max(max(P))];
@@ -738,3 +776,69 @@ function mypancallback(obj,evd)
 hh = getappdata(0,'handles_op');
 plot_spectrogram(hh);
 % disp('pancallback')
+
+
+% --- Executes on button press in button_load_track.
+function button_load_track_Callback(hObject, eventdata, handles)
+% hObject    handle to button_load_track (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Load saved data
+data = getappdata(0,'data');
+gui_op = getappdata(0,'gui_op');
+hh_ch_sig = getappdata(0,'handles_ch_sig');
+
+% Set path and filename for bat track
+if ispref('call_detection_gui') && ispref('call_detection_gui','bat_track_path')
+    track.pname = getpref('call_detection_gui','bat_track_path');
+else
+    track.pname = '';
+end
+track.pname = uigetdir(track.pname,'Select path for bat tracks');
+if isequal(track.pname,0)
+    return;
+end
+setpref('call_detection_gui','bat_track_path',track.pname);
+
+% Get track filename from signal filename
+track.fname = regexprep(data.fname,'_mic_data','_bat_pos');
+track.fs = 200;  % frame rate for video [Hz]
+
+% Find start and end track frame idx
+bat = load(fullfile(track.pname,track.fname));
+track.time(1) = find(isfinite(bat.bat_pos{1}(:,1)),1)/track.fs;
+track.time(2) = find(isfinite(bat.bat_pos{1}(:,1)),1,'last')/track.fs;
+
+% Draw boundary on spectrogram
+axes(handles.axes_spectrogram);
+hold on
+gui_op.track_start_s = plot([1 1]*track.time(1)*1e3,[0,data.fs/2/1e3],'m','linewidth',2);
+text(track.time(1)*1e3,0,'Track start','color','m','fontsize',14,...
+    'verticalalignment','bottom','horizontalalignment','right','backgroundcolor','w');
+gui_op.track_end_s = plot([1 1]*track.time(2)*1e3,[0,data.fs/2/1e3],'m','linewidth',2);
+text(track.time(2)*1e3,0,'Track end','color','m','fontsize',14,...
+    'verticalalignment','bottom','horizontalalignment','left','backgroundcolor','w');
+hold off
+
+% Draw boundary on time axes
+axes(handles.axes_time_series);
+yybnd = ylim;
+hold on
+gui_op.track_start_s = plot([1 1]*track.time(1)*1e3,[-20 20],'r','linewidth',2);
+gui_op.track_end_s = plot([1 1]*track.time(2)*1e3,[-20 20],'r','linewidth',2);
+ylim(yybnd);
+hold off
+
+% Draw boundary on rough signal display window
+axes(hh_ch_sig.axes_ch_sig);
+yybnd = ylim;
+hold on
+gui_op.track_start_r = plot([1 1]*track.time(1),yybnd,'r','linewidth',2);
+gui_op.track_end_r = plot([1 1]*track.time(2),yybnd,'r','linewidth',2);
+hold off
+
+data.track = track;
+
+setappdata(0,'data',data);
+setappdata(0,'gui_op',gui_op);
