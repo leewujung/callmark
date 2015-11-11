@@ -99,16 +99,28 @@ function button_load_file_Callback(hObject, eventdata, handles)
 % Set path
 gui_op = getappdata(0,'gui_op');
 if ~isfield(gui_op,'sig_path')
-    gui_op.sig_path = uigetdir(pwd,'Select the folder containing *_mic_data.mat files');
+    if ispref('call_detection_gui') && ispref('call_detection_gui','sig_path')
+        sig_path = getpref('call_detection_gui','sig_path');
+    else
+        sig_path = '';
+    end
+    gui_op.sig_path = uigetdir(sig_path,'Select the folder containing *_mic_data.mat files');
     if isequal(gui_op.sig_path,0)
         return
     end
+    setpref('call_detection_gui','sig_path',gui_op.sig_path);
 end
-if ~isfield(gui_op,'det_path')
-    gui_op.det_path = uigetdir(pwd,'Select the folder containing *_detect.mat files');
-    if isequal(gui_op.det_path,0)
+if ~isfield(gui_op,'detect_path')
+    if ispref('call_detection_gui') && ispref('call_detection_gui','detect_path')
+        detect_path = getpref('call_detection_gui','detect_path');
+    else
+        detect_path = gui_op.sig_path;
+    end
+    gui_op.detect_path = uigetdir(detect_path,'Select the folder containing *_detect.mat files');
+    if isequal(gui_op.detect_path,0)
         return
     end
+    setpref('call_detection_gui','detect_path',gui_op.detect_path);
 end
 
 % Select file to load
@@ -133,8 +145,8 @@ setappdata(0,'gui_op',gui_op);
 
 
 % Load detection results
-if exist(fullfile(gui_op.det_path,fname_det),'file')  % if detect file exists in current path
-    D_det = load(fullfile(gui_op.det_path,fname_det));
+if exist(fullfile(gui_op.detect_path,fname_det),'file')  % if detect file exists in current path
+    D_det = load(fullfile(gui_op.detect_path,fname_det));
     % copy all fields into current data structure
     field_in_file = fieldnames(D_det);
     for iF=1:length(field_in_file)
@@ -205,12 +217,15 @@ data = getappdata(0,'data');
 % detecting calls if not previously saved results
 if ~isfield(data,'call') % if not previously saved results
     disp('No previous detection, proceed to threshold data >>>');
-    data.locs = th_detection(data.sig(:,data.chsel),data.fs);
+    fig_th = figure('toolbar','figure');
+    data.locs = th_detection(data.sig(:,data.chsel),data.fs,fig_th);
+    waitfor(fig_th);
     setappdata(0,'data',data);
     initialize_call_param();
 else
     disp('Previous detection loaded!');
 end
+data = getappdata(0,'data');  % load updated data again
 set(handles.edit_curr_ch,'String',num2str(data.call(1).channel_marked));
 
 plot_spectrogram(handles,1);
@@ -408,7 +423,7 @@ A.aux_data = aux_data_sorted;
 
 tt = strsplit(A.fname,'.mat');
 save_fname = sprintf('%s_detect.mat',tt{1});
-[save_fname,save_pname] = uiputfile('*.mat','Save detection results',fullfile(gui_op.det_path,save_fname));
+[save_fname,save_pname] = uiputfile('*.mat','Save detection results',fullfile(gui_op.detect_path,save_fname));
 if isequal(save_pname,0)
     return
 else
@@ -518,14 +533,14 @@ delete(hObject);
 
 
 
-function locs = th_detection(sig_current,sig_fs)
+function locs = th_detection(sig_current,sig_fs,fig_h)
 % perform simple signal detection
 th_pi = inputdlg('Minimum pulse interval threshold (ms):','Threshold',1,{'15'});
 th_pi = cellfun(@(c) str2num(c),th_pi);
 
 % manually select threshold for detection
-fig_th = figure('toolbar','figure');
-set(fig_th,'units','pixel','position',[100 100 1100 550]);
+figure(fig_h)
+set(fig_h,'units','pixel','position',[100 100 1100 550]);
 th_flag = 0;
 while th_flag == 0
     plot(sig_current);
@@ -541,7 +556,7 @@ while th_flag == 0
         delete(hpks);
     end
 end
-close(fig_th)
+close(fig_h)
 
 
 
@@ -793,11 +808,21 @@ data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
 hh_ch_sig = getappdata(0,'handles_ch_sig');
 
+% Delete previously loaded boundary
+if isfield(gui_op,'track_start_s')
+    delete(gui_op.track_start_s);
+    delete(gui_op.track_end_s);
+    delete(gui_op.track_start_t);
+    delete(gui_op.track_end_t);
+    delete(gui_op.track_start_r);
+    delete(gui_op.track_end_r);
+end
+
 % Set path and filename for bat track
 if ispref('call_detection_gui') && ispref('call_detection_gui','bat_track_path')
     track.pname = getpref('call_detection_gui','bat_track_path');
 else
-    track.pname = '';
+    track.pname = getpref('call_detection_gui','sig_path');
 end
 track.pname = uigetdir(track.pname,'Select path for bat tracks');
 if isequal(track.pname,0)
@@ -810,7 +835,12 @@ track.fname = regexprep(data.fname,'_mic_data','_bat_pos');
 track.fs = 200;  % frame rate for video [Hz]
 
 % Find start and end track frame idx
+if ~exist(fullfile(track.pname,track.fname),'file')
+    [track.fname,track.pname] = uigetfile(fullfile(track.pname,'*.mat'),'Select matching bat position file');
+    setpref('call_detection_gui','bat_track_path',track.pname);
+end
 bat = load(fullfile(track.pname,track.fname));
+
 track.time(1) = find(isfinite(bat.bat_pos{1}(:,1)),1)/track.fs;
 track.time(2) = find(isfinite(bat.bat_pos{1}(:,1)),1,'last')/track.fs;
 
@@ -829,8 +859,8 @@ hold off
 axes(handles.axes_time_series);
 yybnd = ylim;
 hold on
-gui_op.track_start_s = plot([1 1]*track.time(1)*1e3,[-20 20],'r','linewidth',2);
-gui_op.track_end_s = plot([1 1]*track.time(2)*1e3,[-20 20],'r','linewidth',2);
+gui_op.track_start_t = plot([1 1]*track.time(1)*1e3,[-20 20],'r','linewidth',2);
+gui_op.track_end_t = plot([1 1]*track.time(2)*1e3,[-20 20],'r','linewidth',2);
 ylim(yybnd);
 hold off
 
