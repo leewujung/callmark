@@ -286,6 +286,11 @@ hh = getappdata(0,'handles_op');
 tolerance = round(2e-3*data.fs);  % tolerence in points
 [xadd,~] = ginput(1);   % time
 xadd = round(xadd/1e3*data.fs);  % convert time to index
+
+search_idx = xadd+(1:tolerance)-round(tolerance/2);  % look for peak within this range
+[~,idx] = max(data.sig(search_idx,gui_op.chsel_current));
+xadd = idx+search_idx(1)-1;
+
 if any(abs([data.call.locs]-xadd)<tolerance)  % prevent marking error
     xadd = [];
 end
