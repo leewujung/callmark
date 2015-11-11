@@ -217,9 +217,7 @@ data = getappdata(0,'data');
 % detecting calls if not previously saved results
 if ~isfield(data,'call') % if not previously saved results
     disp('No previous detection, proceed to threshold data >>>');
-    fig_th = figure('toolbar','figure');
-    data.locs = th_detection(data.sig(:,data.chsel),data.fs,fig_th);
-    waitfor(fig_th);
+    data.locs = th_detection(data.sig(:,data.chsel),data.fs);
     setappdata(0,'data',data);
     initialize_call_param();
 else
@@ -528,18 +526,13 @@ delete(hObject);
 
 
 
-
-%%% ================= OTHER FUNCTIONS ===============================
-
-
-
-function locs = th_detection(sig_current,sig_fs,fig_h)
+function locs = th_detection(sig_current,sig_fs)
 % perform simple signal detection
 th_pi = inputdlg('Minimum pulse interval threshold (ms):','Threshold',1,{'15'});
 th_pi = cellfun(@(c) str2num(c),th_pi);
 
 % manually select threshold for detection
-figure(fig_h)
+fig_h = figure('toolbar','figure');
 set(fig_h,'units','pixel','position',[100 100 1100 550]);
 th_flag = 0;
 while th_flag == 0

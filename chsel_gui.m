@@ -86,6 +86,10 @@ setappdata(0,'data2',data);
 if data.num_ch_in_file==1 || isfield(data,'call')
      button_select_Callback(hObject, eventdata, handles);
      % go back to main GUI
+else  % enable the channel selection button
+    set(handles.button_select,'enable','on');
+    set(handles.edit_chsel,'enable','on');
+    set(handles.text1,'enable','on');
 end
 
 % change GUI window name to loaded file
