@@ -22,7 +22,7 @@ function varargout = call_detection_gui(varargin)
 
 % Edit the above text to modify the response to help call_detection_gui
 
-% Last Modified by GUIDE v2.5 10-Nov-2015 09:56:54
+% Last Modified by GUIDE v2.5 11-Nov-2015 10:49:05
 
 % Wu-Jung Lee | leewujung@gmail.com
 
@@ -800,10 +800,15 @@ function button_load_track_Callback(hObject, eventdata, handles)
 % hObject    handle to button_load_track (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+update_track(0);
 
+
+
+function update_track(track_loaded_flag)
 % Load saved data
 data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
+hh = getappdata(0,'handles_op');
 hh_ch_sig = getappdata(0,'handles_ch_sig');
 
 % Delete previously loaded boundary
@@ -816,21 +821,26 @@ if isfield(gui_op,'track_start_s')
     delete(gui_op.track_end_r);
 end
 
-% Set path and filename for bat track
-if ispref('call_detection_gui') && ispref('call_detection_gui','bat_track_path')
-    track.pname = getpref('call_detection_gui','bat_track_path');
+if track_loaded_flag==0  % need to load track file
+    % Set path and filename for bat track
+    if ispref('call_detection_gui') && ispref('call_detection_gui','bat_track_path')
+        track.pname = getpref('call_detection_gui','bat_track_path');
+    else
+%         track.pname = getpref('call_detection_gui','sig_path');
+        track.pname = uigetdir(getpref('call_detection_gui','sig_path'),'Select path for bat tracks');
+    end
+%     track.pname = uigetdir(track.pname,'Select path for bat tracks');
+    if isequal(track.pname,0)
+        return;
+    end
+    setpref('call_detection_gui','bat_track_path',track.pname);
+    
+    % Get track filename from signal filename
+    track.fname = regexprep(data.fname,'_mic_data','_bat_pos');
 else
-    track.pname = getpref('call_detection_gui','sig_path');
+    track = data.track;
 end
-track.pname = uigetdir(track.pname,'Select path for bat tracks');
-if isequal(track.pname,0)
-    return;
-end
-setpref('call_detection_gui','bat_track_path',track.pname);
-
-% Get track filename from signal filename
-track.fname = regexprep(data.fname,'_mic_data','_bat_pos');
-track.fs = 200;  % frame rate for video [Hz]
+track.fs = str2double(get(hh.edit_video_fps,'String'));  % frame rate for video [Hz]
 
 % Find start and end track frame idx
 if ~exist(fullfile(track.pname,track.fname),'file')
@@ -843,7 +853,7 @@ track.time(1) = find(isfinite(bat.bat_pos{1}(:,1)),1)/track.fs;
 track.time(2) = find(isfinite(bat.bat_pos{1}(:,1)),1,'last')/track.fs;
 
 % Draw boundary on spectrogram
-axes(handles.axes_spectrogram);
+axes(hh.axes_spectrogram);
 hold on
 gui_op.track_start_s = plot([1 1]*track.time(1)*1e3,[0,data.fs/2/1e3],'m','linewidth',2);
 text(track.time(1)*1e3,0,'Track start','color','m','fontsize',14,...
@@ -854,7 +864,7 @@ text(track.time(2)*1e3,0,'Track end','color','m','fontsize',14,...
 hold off
 
 % Draw boundary on time axes
-axes(handles.axes_time_series);
+axes(hh.axes_time_series);
 yybnd = ylim;
 hold on
 gui_op.track_start_t = plot([1 1]*track.time(1)*1e3,[-20 20],'r','linewidth',2);
@@ -874,3 +884,32 @@ data.track = track;
 
 setappdata(0,'data',data);
 setappdata(0,'gui_op',gui_op);
+
+
+
+function edit_video_fps_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_video_fps (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+data = getappdata(0,'data');
+if isfield(data,'track')
+    update_track(1);
+else
+    update_track(0);
+end
+
+% Hints: get(hObject,'String') returns contents of edit_video_fps as text
+%        str2double(get(hObject,'String')) returns contents of edit_video_fps as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_video_fps_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_video_fps (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
