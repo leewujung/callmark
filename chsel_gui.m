@@ -67,6 +67,7 @@ if ~isfield(data,'call') || size(data.sig,2)~=size(data.sig_rough,2) % if not pr
     data.sig_rough_t = (0:size(data.sig_rough,1)-1)/data.fs*data.deci_len;
     data.shift_gap = max(max(squeeze(data.sig_rough)));
     data.shift_gap = ceil(data.shift_gap/0.01)*0.01;
+    data.shift_gap = data.shift_gap/3;
 end
 
 % Plot all channels
