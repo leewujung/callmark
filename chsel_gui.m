@@ -61,7 +61,7 @@ guidata(hObject, handles);
 % Load data from main GUI
 data = getappdata(0,'data');
 
-if ~isfield(data,'call') || size(data.sig,2)~=size(data.sig_rough,2) % if not previously saved results or if # channels different
+if ~isfield(data,'call') || size(data.sig,2)~=size(data.sig_rough,2) || ~isfield(data,'shift_gap') % if not previously saved results or if # channels different
     data.deci_len = 1000;
     data.sig_rough = getroughsig(data.sig,data.deci_len);
     data.sig_rough_t = (0:size(data.sig_rough,1)-1)/data.fs*data.deci_len;
