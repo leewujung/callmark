@@ -22,9 +22,10 @@ function varargout = call_detection_gui(varargin)
 
 % Edit the above text to modify the response to help call_detection_gui
 
-% Last Modified by GUIDE v2.5 11-Nov-2015 10:49:05
-
 % Wu-Jung Lee | leewujung@gmail.com
+
+
+% Last Modified by GUIDE v2.5 11-Nov-2015 10:49:05
 
 
 % Begin initialization code - DO NOT EDIT
@@ -131,7 +132,8 @@ else
     k = strfind(fname,'_detect');
     if isempty(k)  % if not '_detect' file
         ss = strsplit(fname,'.');
-        fname_det = [ss{1},'_detect.mat'];
+        fname_det_pre = strjoin(ss(1:length(ss)-1),'.');
+        fname_det = [fname_det_pre,'_detect.mat'];
         fname_sig = fname;
     else
         fname_det = fname;
@@ -160,10 +162,7 @@ end
 % Load mic signal
 if exist(fullfile(gui_op.sig_path,fname_sig),'file')  % if sig file exists in current path
     D_sig = load(fullfile(gui_op.sig_path,fname_sig));
-    field_in_file = fieldnames(D_sig);
-    for iF=1:length(field_in_file)
-        data.(field_in_file{iF}) = D_sig.(field_in_file{iF});
-    end
+    data.sig = D_sig.sig;  % only load sig from the raw file
     disp('Signal loaded');
 else
     disp('Mic file not found');
@@ -730,6 +729,8 @@ data.curr_caxis_range = [min(min(P)) max(max(P))];
 caxis(handles.axes_spectrogram,...
       [data.curr_caxis_range(1)+range(data.curr_caxis_range)*get(handles.slider_caxis,'value'),...
        data.curr_caxis_range(2)]);
+setAxesZoomMotion(gui_op.hzoom,handles.axes_spectrogram,'horizontal');
+setAxesPanMotion(gui_op.hpan,handles.axes_spectrogram,'horizontal');
 
    
 % plot times series =============================
@@ -748,10 +749,7 @@ end
 xlim(xlim_curr);
 
 % set zoom and pan motion
-setAxesZoomMotion(gui_op.hzoom,handles.axes_spectrogram,'horizontal');
 setAxesZoomMotion(gui_op.hzoom,handles.axes_time_series,'horizontal');
-
-setAxesPanMotion(gui_op.hpan,handles.axes_spectrogram,'horizontal');
 setAxesPanMotion(gui_op.hpan,handles.axes_time_series,'horizontal');
 
 set(gui_op.hzoom,'ActionPostCallback',{@myzoomcallback});
