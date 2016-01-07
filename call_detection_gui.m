@@ -163,6 +163,9 @@ end
 if exist(fullfile(gui_op.sig_path,fname_sig),'file')  % if sig file exists in current path
     D_sig = load(fullfile(gui_op.sig_path,fname_sig));
     data.sig = D_sig.sig;  % only load sig from the raw file
+    if ~isfield(data,'fs')
+        data.fs = D_sig.fs;
+    end
     disp('Signal loaded');
 else
     disp('Mic file not found');
