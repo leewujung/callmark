@@ -137,7 +137,7 @@ else
         fname_sig = fname;
     else
         fname_det = fname;
-        fname_sig = fname(1:k-1);
+        fname_sig = [fname(1:k-1) '.mat'];
     end
     gui_op.fname_sig = fname_sig;
     gui_op.fname_det = fname_det;
