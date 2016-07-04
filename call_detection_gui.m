@@ -25,7 +25,7 @@ function varargout = call_detection_gui(varargin)
 % Wu-Jung Lee | leewujung@gmail.com
 
 
-% Last Modified by GUIDE v2.5 11-Nov-2015 10:49:05
+% Last Modified by GUIDE v2.5 03-Jul-2016 18:28:29
 
 
 % Begin initialization code - DO NOT EDIT
@@ -325,15 +325,17 @@ data.call(iC).call_end_idx = call_idx(2)+ext_idx(1);
 % update figure
 set(gui_op.mark_spectrogram,'XData',[data.call.locs]/data.fs*1e3,'YData',50*ones(1,length(data.call)));
 set(gui_op.mark_time_series,'XData',[data.call.locs]/data.fs*1e3,'YData',zeros(1,length(data.call)));
-delete(gui_op.mark_num);
-gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,100*ones(length(data.call),1),...
-                       num2str((1:length(data.call))'),'color','m','backgroundcolor','w',...
-                       'fontsize',14,'fontweight','bold');
-delete(gui_op.ch_sel_num);
-[~,IX] = sort([data.call.locs]);  % correctly sorted index
-gui_op.ch_sel_num = text([data.call(IX).locs]/data.fs*1e3,110*ones(length(data.call),1),...
-                         num2str([data.call(IX).channel_marked]'),'color','b','backgroundcolor','w',...
-                         'fontsize',14,'fontweight','bold');
+if get(handles.checkbox_mark,'Value')  % if box checked, plot mark nums
+    delete(gui_op.mark_num);
+    gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,data.fs/2/1e3*4/5*ones(length(data.call),1),...
+        num2str((1:length(data.call))'),'color','m','backgroundcolor','w',...
+        'fontsize',14,'fontweight','bold');
+    delete(gui_op.ch_sel_num);
+    [~,IX] = sort([data.call.locs]);  % correctly sorted index
+    gui_op.ch_sel_num = text([data.call(IX).locs]/data.fs*1e3,data.fs/2/1e3*4.5/5*ones(length(data.call),1),...
+        num2str([data.call(IX).channel_marked]'),'color','b','backgroundcolor','w',...
+        'fontsize',14,'fontweight','bold');
+end
 
 % save global var
 setappdata(0,'data',data);
@@ -374,15 +376,17 @@ data.aux_data(del_idx) = [];
 % update figure
 set(gui_op.mark_spectrogram,'XData',[data.call.locs]/data.fs*1e3,'YData',50*ones(1,length(data.call)));
 set(gui_op.mark_time_series,'XData',[data.call.locs]/data.fs*1e3,'YData',zeros(1,length(data.call)));
-delete(gui_op.mark_num);
-gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,100*ones(length(data.call),1),...
-                       num2str((1:length(data.call))'),'color','m','backgroundcolor','w',...
-                       'fontsize',14,'fontweight','bold');
-delete(gui_op.ch_sel_num);
-[~,IX] = sort([data.call.locs]);  % correctly sorted index
-gui_op.ch_sel_num = text([data.call(IX).locs]/data.fs*1e3,110*ones(length(data.call),1),...
-                         num2str([data.call(IX).channel_marked]'),'color','b','backgroundcolor','w',...
-                         'fontsize',14,'fontweight','bold');
+if get(handles.checkbox_mark,'Value')  % if box checked, plot mark nums
+    delete(gui_op.mark_num);
+    gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,data.fs/2/1e3*4/5*ones(length(data.call),1),...
+        num2str((1:length(data.call))'),'color','m','backgroundcolor','w',...
+        'fontsize',14,'fontweight','bold');
+    delete(gui_op.ch_sel_num);
+    [~,IX] = sort([data.call.locs]);  % correctly sorted index
+    gui_op.ch_sel_num = text([data.call(IX).locs]/data.fs*1e3,data.fs/2/1e3*4.5/5*ones(length(data.call),1),...
+        num2str([data.call(IX).channel_marked]'),'color','b','backgroundcolor','w',...
+        'fontsize',14,'fontweight','bold');
+end
 
 % restore pan or zoom motion
 setAllowAxesZoom(gui_op.hzoom,hh.axes_spectrogram,1);
@@ -696,13 +700,15 @@ axis xy
 % if flag==1  % first time plot spectrogram
 hold on
 gui_op.mark_spectrogram = plot([data.call.locs]/data.fs*1e3,50,'m*','markersize',8,'linewidth',1);
-gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,100*ones(length(data.call),1),...
-                       num2str((1:length(data.call))'),'color','m','backgroundcolor','w',...
-                       'fontsize',14,'fontweight','bold');
-[~,IX] = sort([data.call.locs]);  % correctly sorted index
-gui_op.ch_sel_num = text([data.call(IX).locs]/data.fs*1e3,110*ones(length(data.call),1),...
-                         num2str([data.call(IX).channel_marked]'),'color','b','backgroundcolor','w',...
-                         'fontsize',14,'fontweight','bold');
+if get(handles.checkbox_mark,'Value')  % if box checked, plot mark nums
+    gui_op.mark_num = text(sort([data.call.locs])/data.fs*1e3,data.fs/2/1e3*4/5*ones(length(data.call),1),...
+        num2str((1:length(data.call))'),'color','m','backgroundcolor','w',...
+        'fontsize',14,'fontweight','bold');
+    [~,IX] = sort([data.call.locs]);  % correctly sorted index
+    gui_op.ch_sel_num = text([data.call(IX).locs]/data.fs*1e3,data.fs/2/1e3*4.5/5*ones(length(data.call),1),...
+        num2str([data.call(IX).channel_marked]'),'color','b','backgroundcolor','w',...
+        'fontsize',14,'fontweight','bold');
+end
 hold off
 if exist('parula','file')
     colormap('parula');
@@ -914,3 +920,14 @@ function edit_video_fps_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in checkbox_mark.
+function checkbox_mark_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_mark (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+hh = getappdata(0,'handles_op');
+plot_spectrogram(hh);
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_mark
