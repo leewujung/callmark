@@ -26,15 +26,16 @@ Name         Size          Bytes       Class     Attributes
   Load data file in `WAV` or `MAT` format.
   If this is the first time you load a particular file, you will see
   two file/folder selection windows with prompts
-  1) `Select the folder containing the recording files` and
-  2) `Select the folder containing *_detect.mat files`.
-  These windows won't pop up if you try to load another recording file
+    1) `Select the folder containing the recording files` and
+    2) `Select the folder containing *_detect.mat files`.
+  
+    These windows won't pop up if you try to load another recording file
   in the same folder.
-
-  After selecting these paths, you will see another window popping up
+  
+    After selecting these paths, you will see another window popping up
   for you to select the actual recording file you want to analyze.
-
-  If you load a `xxx_detect.mat` file instead of a signal
+  
+    If you load a `xxx_detect.mat` file instead of a signal
   (e.g., `xxx.mat` or `xxx.wav`), you have to press the `Detect calls` to
   bring up the spectrogram and previously saved marked calls.
 
