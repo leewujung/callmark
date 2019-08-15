@@ -105,7 +105,7 @@ if ~isfield(gui_op,'sig_path')
     else
         sig_path = '';
     end
-    gui_op.sig_path = uigetdir(sig_path,'Select the folder containing *_mic_data.mat files');
+    gui_op.sig_path = uigetdir(sig_path,'Select the folder containing the recording files');
     if isequal(gui_op.sig_path,0)
         return
     end
@@ -125,22 +125,29 @@ if ~isfield(gui_op,'detect_path')
 end
 
 % Select file to load
-[fname,pname] = uigetfile(fullfile(gui_op.sig_path,'*.mat'),'Select signal file');
+curr_path = pwd;
+cd(sig_path)
+[fname,pname] = uigetfile('*.mat;*.wav','Select the recording file');
+cd(curr_path)
 if isequal(pname,0)
     return
 else
-    k = strfind(fname,'_detect');
+    [~,name,ext] = fileparts(fname);
+    k = strfind(name,'_detect');
     if isempty(k)  % if not '_detect' file
-        ss = strsplit(fname,'.');
-        fname_det_pre = strjoin(ss(1:length(ss)-1),'.');
-        fname_det = [fname_det_pre,'_detect.mat'];
-        fname_sig = fname;
-    else
-        fname_det = fname;
-        fname_sig = [fname(1:k-1) '.mat'];
+        fname_det = [name,'_detect.mat'];        
+    else           % if a '_detect' file
+        fname_det = [name,ext];
+        name = name(1:k-1);
+    end
+    gui_op.fname_det = fname_det;
+    
+    if exist(fullfile(gui_op.sig_path,[name,'.mat']),'file')  % if MAT sig file exists in current path
+        fname_sig = [name,'.mat'];
+    elseif exist(fullfile(gui_op.sig_path,[name,'.wav']),'file')  % if WAV sig file exists in current path
+        fname_sig = [name,'.wav'];
     end
     gui_op.fname_sig = fname_sig;
-    gui_op.fname_det = fname_det;
 end
 
 setappdata(0,'gui_op',gui_op);
@@ -160,15 +167,24 @@ else
 end
 
 % Load mic signal
-if exist(fullfile(gui_op.sig_path,fname_sig),'file')  % if sig file exists in current path
+[~,~,mic_ext] = fileparts(fname_sig);
+if strcmp(mic_ext,'.mat')  % if sig file is MAT
     D_sig = load(fullfile(gui_op.sig_path,fname_sig));
-    data.sig = D_sig.sig;  % only load sig from the raw file
+    data.sig = D_sig.sig;
     if ~isfield(data,'fs')
         data.fs = D_sig.fs;
     end
-    disp('Signal loaded');
+    disp('Signal loaded from MAT file.');
+    gui_op.fname_sig = fname_sig;
+elseif strcmp(mic_ext,'.wav')  % if sig file is WAV
+    if verLessThan('matlab', '8.6')  % if use Matlab <R2015b
+        [data.sig,data.fs] = wavread(fullfile(gui_op.sig_path,fname_sig));
+    else
+        [data.sig,data.fs] = audioread(fullfile(gui_op.sig_path,fname_sig));
+    end
+    disp('Signal loaded from WAV file.');
 else
-    disp('Mic file not found');
+    disp('Mic file not found.');
     return
 end
 
@@ -430,8 +446,10 @@ A.num_ch_in_file = data.num_ch_in_file;
 A.call = call_sorted;
 A.aux_data = aux_data_sorted;
 
-tt = strsplit(A.fname,'.mat');
-save_fname = sprintf('%s_detect.mat',tt{1});
+[~,name,~] = fileparts(A.fname);
+save_fname = sprintf('%s_detect.mat',name);
+% tt = strsplit(A.fname,'.mat');
+% save_fname = sprintf('%s_detect.mat',tt{1});
 [save_fname,save_pname] = uiputfile('*.mat','Save detection results',fullfile(gui_op.detect_path,save_fname));
 if isequal(save_pname,0)
     return

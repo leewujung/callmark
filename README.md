@@ -34,9 +34,13 @@ Name         Size          Bytes       Class     Attributes
   After selecting these paths, you will see another window popping up
   for you to select the actual recording file you want to analyze.
 
+  If you load a `xxx_detect.mat` file instead of a signal
+  (e.g., `xxx.mat` or `xxx.wav`), you have to press the `Detect calls` to
+  bring up the spectrogram and previously saved marked calls.
+
 * **Detect calls**<br>
-  Initial simple energy detection of calls,
-  which will also initialize the spectrogram and time series display.
+  Initialize simple energy detection of calls. This button will also
+  bring up the spectrogram and time series display.
   Note that there is usually a bit of lag after you accept the simple
   threshold detection until the spectrogram shows up, so don't be
   alarmed if nothing seems to be happening for a few seconds.
@@ -53,6 +57,15 @@ Name         Size          Bytes       Class     Attributes
   Therefore, the call marking results and the raw data are kept as
   separate files.
 
+* **Channel ++/--**<br>
+  Change the source of the displayed spectrogram and time series to
+  another channel. The call marks will not change location.
+
+* **Current ch#**<br>
+  Enter a specific channel number to change the source of the displayed
+  spectrogram and time series to another channel.
+   The call marks will not change location.
+
 ### Other operation notes
 * The MATLAB figure tools `Zoom in`, `Zoom out`, and `Pan` are active
 in this program so that you can move around easily in the recorded
@@ -61,3 +74,6 @@ time series.
 to control the coloraxis of spectrogram.
 * After saving `xxx_detect.mat`, you can use **Load file** to load
 either `xxx_detect.mat` or `xxx.mat` to review what has been saved.
+* Ignore the button `Load track` and the `Video fps (Hz)` box as
+they are used in a specific case when the sound recording is accompanied
+by a current movement trajectory.
