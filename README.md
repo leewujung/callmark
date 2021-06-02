@@ -22,18 +22,19 @@ Name         Size          Bytes       Class     Attributes
 
 ### GUI button functions
 
-*  **Load file**<br>
+*  **Load []**<br>
   Load data file in `WAV` or `MAT` format.
   If this is the first time you load a particular file, you will see
   two file/folder selection windows with prompts
     1) `Select the folder containing the recording files` and
-    2) `Select the folder containing *_detect.mat files`.
+    2) `Select the folder containing *_detect.mat files`. [this needs to be a different folder than the above]
   
     These windows won't pop up if you try to load another recording file
   in the same folder.
   
     After selecting these paths, you will see another window popping up
-  for you to select the actual recording file you want to analyze.
+  for you to select the actual recording file you want to analyze. [Once selected, a waveform window will pop up,
+  choose channel and press select to allow starting the detection process]
   
     If you load a `xxx_detect.mat` file instead of a signal
   (e.g., `xxx.mat` or `xxx.wav`), you have to press the `Detect calls` to
@@ -41,9 +42,9 @@ Name         Size          Bytes       Class     Attributes
 
 * **Detect calls**<br>
   Initialize simple energy detection of calls. This button will also
-  bring up the spectrogram and time series display.
-  Note that there is usually a bit of lag after you accept the simple
-  threshold detection until the spectrogram shows up, so don't be
+  bring up the (spectrogram and) time series display. [in time series display, click the threshold you like in it, and the
+  detections will be shown in red asterisks. Accept the new threshold if you like the results]. Note that there is usually
+  a bit of lag after you accept the simple threshold detection until [] the spectrogram shows up, so don't be
   alarmed if nothing seems to be happening for a few seconds.
 
 * **Add mark**<br>
